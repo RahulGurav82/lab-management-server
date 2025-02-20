@@ -73,19 +73,32 @@ router.get("/", async (req, res) => {
 });
 
 // API to send a requirement
+
 router.post("/send-requirement", async (req, res) => {
   try {
-    console.log(req.body)
-    const { labId, pcNumber, requirementType, description } = req.body;
+    console.log(req.body);
+    const { labId, labName, pcNumber, requirementType, description } = req.body;
 
-    if (!labId || !pcNumber || !requirementType || !description) {
+    // Check if all fields are present
+    if (!labId || !labName || !pcNumber || !requirementType || !description) {
       return res.status(400).json({ message: "All fields are required!" });
     }
 
-    const requirement = new Requirement({ labId, pcNumber, requirementType, description });
+    // Save the requirement to the database
+    const requirement = new Requirement({ labId, labName, pcNumber, requirementType, description });
     await requirement.save();
 
     res.status(201).json({ message: "Requirement submitted successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// API to get all requirements
+router.get("/all-requirements", async (req, res) => {
+  try {
+    const requirements = await Requirement.find().sort({ createdAt: -1 }); // Sort by latest
+    res.status(200).json(requirements);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
