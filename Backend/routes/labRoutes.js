@@ -10,6 +10,7 @@ const generateLabId = () => `LAB-${Math.random().toString(36).substr(2, 6).toUpp
 // Create a new lab
 router.post("/create", async (req, res) => {
   try {
+    console.log(req.body)
     const { name, capacity } = req.body;
     if (!name || !capacity) {
       return res.status(400).json({ message: "Lab name and capacity are required" });
