@@ -74,7 +74,6 @@ router.get("/", async (req, res) => {
 });
 
 // API to send a requirement
-
 router.post("/send-requirement", async (req, res) => {
   try {
     console.log(req.body);
@@ -104,5 +103,59 @@ router.get("/all-requirements", async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+
+// API for Admin to update requirement status
+router.put("/update-status/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    // Ensure status is valid
+    if (!["Pending", "Resolved", "Rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value!" });
+    }
+
+    const updatedRequirement = await Requirement.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedRequirement) {
+      return res.status(404).json({ message: "Requirement not found!" });
+    }
+
+    res.status(200).json({ message: "Status updated successfully!", updatedRequirement });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// API to get requirements based on labId or pcNumber
+router.get("/requirements-by-lab-or-pc", async (req, res) => {
+  try {
+    console.log(req.query);
+    const { labId, pcNumber } = req.query;
+
+    if (!labId && !pcNumber) {
+      return res.status(400).json({ message: "labId or pcNumber is required" });
+    }
+
+    const filter = {};
+    if (labId) filter.labId = labId;
+    if (pcNumber) filter.pcNumber = pcNumber;
+
+    const requirements = await Requirement.find(filter).sort({ createdAt: -1 });
+
+    if (requirements.length === 0) {
+      return res.status(404).json({ message: "No requirements found for the given labId or pcNumber" });
+    }
+
+    res.status(200).json(requirements);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+
 
 module.exports = router;
