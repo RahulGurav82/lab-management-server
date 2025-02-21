@@ -45,7 +45,7 @@ router.post("/join-lab", async (req, res) => {
 
     // Check if PC already joined
     if (lab.connectedPCs.some(pc => pc.pcNumber === pcNumber)) {
-      return res.status(400).json({ message: "PC is already connected to this lab" });
+      return     res.status(200).json({ message: "PC joined the lab successfully", labName: lab.name });
     }
 
     // Check if Lab is full
@@ -60,6 +60,24 @@ router.post("/join-lab", async (req, res) => {
     res.status(200).json({ message: "PC joined the lab successfully", labName: lab.name });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });
+  }
+});
+
+// API to fetch connected PCs for a specific lab
+router.get("/:labId/connected-pcs", async (req, res) => {
+  try {
+    const { labId } = req.params;
+    
+    // Find the lab by labId
+    const lab = await Lab.findOne({ labId });
+    
+    if (!lab) {
+      return res.status(404).json({ message: "Lab not found" });
+    }
+    
+    res.json({ labName: lab.name, connectedPCs: lab.connectedPCs });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
