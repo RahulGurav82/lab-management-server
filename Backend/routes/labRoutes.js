@@ -7,6 +7,37 @@ const Requirement = require("../models/Requirement"); // New model for PCs
 // Generate a unique Lab ID
 const generateLabId = () => `LAB-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
+// Get all labs
+router.get("/", async (req, res) => {
+  try {
+    const labs = await Lab.find();
+    res.json(labs);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+});
+
+// Get all PCs along with their corresponding labId
+router.get("/pcs", async (req, res) => {
+  try {
+    const labs = await Lab.find({}, "name labId connectedPCs");
+
+    // Flatten the result to get all PCs with their respective labId and name
+    const allPCs = labs.flatMap(lab => 
+      lab.connectedPCs.map(pc => ({
+        labName: lab.name,
+        labId: lab.labId,
+        pcNumber: pc.pcNumber,
+        joinedAt: pc.joinedAt
+      }))
+    );
+
+    res.json(allPCs);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching PCs", error: error.message });
+  }
+});
+
 // Create a new lab
 router.post("/create", async (req, res) => {
   try {
@@ -78,16 +109,6 @@ router.get("/:labId/connected-pcs", async (req, res) => {
     res.json({ labName: lab.name, connectedPCs: lab.connectedPCs });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
-
-// Get all labs
-router.get("/", async (req, res) => {
-  try {
-    const labs = await Lab.find();
-    res.json(labs);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error });
   }
 });
 
@@ -174,6 +195,32 @@ router.get("/requirements-by-lab-or-pc", async (req, res) => {
   }
 });
 
+// Route to get statistics
+router.get("/stats", async (req, res) => {
+  try {
+    // Get count of labs
+    const totalLabs = await Lab.countDocuments();
 
+    // Get count of connected PCs
+    const labs = await Lab.find({}, "connectedPCs");
+    const totalConnectedPCs = labs.reduce((acc, lab) => acc + lab.connectedPCs.length, 0);
+
+    // Get count of requirements based on status
+    const pendingRequirements = await Requirement.countDocuments({ status: "Pending" });
+    const resolvedRequirements = await Requirement.countDocuments({ status: "Resolved" });
+    const rejectedRequirements = await Requirement.countDocuments({ status: "Rejected" });
+
+    // Send response
+    res.json({
+      totalLabs,
+      totalConnectedPCs,
+      pendingRequirements,
+      resolvedRequirements,
+      rejectedRequirements,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching statistics", error: error.message });
+  }
+});
 
 module.exports = router;
